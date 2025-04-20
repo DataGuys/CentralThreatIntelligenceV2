@@ -1,60 +1,40 @@
 targetScope = 'subscription'
 
-// Parameters
-@description('Location for all resources')
-param location string = deployment().location
+@description('Prefix for resource names')
+param prefix string = 'cti'
 
-@description('Prefix for all resources')
-param prefix string = 'CTI'
-
-@description('Environment name')
 @allowed([
   'dev'
   'test'
   'prod'
 ])
-param environmentName string = 'prod'
+@description('Deployment environment')
+param environment string = 'prod'
 
-// Variables
-var resourceGroupName = '${prefix}-rg-${environmentName}'
-var logAnalyticsWorkspaceName = '${prefix}-law-${environmentName}'
-var keyVaultName = '${prefix}-kv-${environmentName}'
-var dcRuleSyslogName = '${prefix}-dcr-syslog-${environmentName}'
-var queryPackName = '${prefix}-qp-${environmentName}'
-var sentinelName = 'SecurityInsights(${logAnalyticsWorkspaceName})'
-@description('Tags for all resources')
+@description('Azure location for the resource group')
+param location string = deployment().location
+
+@description('Tags applied to every resource')
 param tags object = {
-  environment: environmentName
   project: 'CentralThreatIntelligence'
+  environment: environment
 }
 
-// Create Resource Group
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
-  name: resourceGroupName
+var rgName = '${prefix}-rg-${environment}'
+
+resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
+  name: rgName
   location: location
   tags: tags
 }
 
-// Deploy resources to the Resource Group
-module resources 'resources.bicep' = {
-  name: 'resourcesDeployment'
-  scope: resourceGroup
+module resources './modules/resources.bicep' = {
+  name: 'centralThreatIntelligence'
+  scope: rg
   params: {
+    prefix: prefix
     location: location
-    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
-    keyVaultName: keyVaultName
-    dcRuleSyslogName: dcRuleSyslogName
-    queryPackName: queryPackName
-    sentinelName: sentinelName
+    environment: environment
     tags: tags
   }
 }
-
-// Outputs
-output resourceGroupId string = resourceGroup.id
-output resourceGroupName string = resourceGroup.name
-output logAnalyticsWorkspaceId string = resources.outputs.logAnalyticsWorkspaceId
-output keyVaultId string = resources.outputs.keyVaultId
-output dcRuleSyslogId string = resources.outputs.dcRuleSyslogId
-output queryPackId string = resources.outputs.queryPackId
-output sentinelId string = resources.outputs.sentinelId
