@@ -6,14 +6,14 @@ A bicep template for deploying a centralized security monitoring solution with M
 
 ### Option 1: One-line Deployment (Basic)
 
-To deploy the basic solution in Azure Cloud Shell (bash), run this command:
+To deploy the core components solution in Azure Cloud Shell (bash), run this command:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/main.bicep > main.bicep && curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/modules/resources.bicep > resources.bicep && mkdir -p modules && mv resources.bicep modules/ && az deployment sub create --location eastus --template-file main.bicep --parameters prefix=CTI environmentName=prod
 ```
 
-Option 2: Complete Deployment with Custom Tables
-For a complete deployment including custom threat intelligence tables, use this command:
+Option 2: Complete Deployment with Custom Tables in Azure Cloud Shell (bash)
+For a complete deployment using the deployment script, including custom threat intelligence tables, use this command:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/deploy-cti.sh > deploy-cti.sh && chmod +x deploy-cti.sh && ./deploy-cti.sh
