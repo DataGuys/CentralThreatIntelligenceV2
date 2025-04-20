@@ -16,7 +16,7 @@ A minimal, cost‑efficient Microsoft Sentinel landing zone that spins up:
 #### 1 App Registration Deployment
 
 ```bash
-curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligence/main/create-cti-app.sh | tr -d '\r' | bash -s
+curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/refs/heads/main/scripts/create-cti-app-registration.sh | tr -d '\r' | bash -s
 ```
 
 ### 2. Deploy the solution
