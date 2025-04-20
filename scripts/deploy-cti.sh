@@ -93,7 +93,7 @@ echo "────────────────────────�
 az deployment sub create \
   --name "$DEPLOY_NAME" \
   --location "$LOCATION" \
-  --template-uri "$RAW_BASE/main.bicep" \
+  --template-uri "../main.bicep" \
   --parameters prefix="$PREFIX" environment="$ENVIRONMENT" location="$LOCATION"
 
 #------------------ Outputs -----------------------------------------------------
@@ -108,7 +108,7 @@ echo "[+] Creating custom Log Analytics tables in '$WORKSPACE_NAME'…"
 
 TEMP_JSON=$(mktemp)
 trap 'rm -f "$TEMP_JSON"' EXIT
-curl -sL "$RAW_BASE/custom-tables.json" -o "$TEMP_JSON"
+curl -sL "tables/custom-tables.json" -o "$TEMP_JSON"
 
 jq -c '.[]' "$TEMP_JSON" | while read -r tbl; do
   TBL_NAME=$(jq -r '.name'    <<< "$tbl")
