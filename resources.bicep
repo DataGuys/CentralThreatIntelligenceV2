@@ -36,21 +36,6 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   tags: tags
 }
 
-// Deploy resources to the Resource Group
-module resources 'resources.bicep' = {
-  name: 'resourcesDeployment'
-  scope: resourceGroup
-  params: {
-    location: location
-    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
-    keyVaultName: keyVaultName
-    dcRuleSyslogName: dcRuleSyslogName
-    queryPackName: queryPackName
-    sentinelName: sentinelName
-    tags: tags
-  }
-}
-
 // Outputs
 output resourceGroupId string = resourceGroup.id
 output resourceGroupName string = resourceGroup.name
