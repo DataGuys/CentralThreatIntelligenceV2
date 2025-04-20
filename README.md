@@ -1,9 +1,8 @@
 # CentralThreatIntelligenceV2
-Version 2 using PowerShell instead of Bash.
 
 ## Quick Deployment
 
-To deploy this solution in Azure Cloud Shell, run this command:
+To deploy this solution in Azure Cloud Shell (bash), run this command:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/main.bicep > main.bicep && curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/modules/resources.bicep > resources.bicep && mkdir -p modules && mv resources.bicep modules/ && az deployment sub create --location eastus --template-file main.bicep --parameters prefix=CTI environmentName=prod
