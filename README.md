@@ -1,5 +1,7 @@
 # CentralThreatIntelligenceV2
 
+A bicep template for deploying a centralized security monitoring solution with Microsoft Sentinel.
+
 ## Quick Deployment
 
 To deploy this solution in Azure Cloud Shell (bash), run this command:
@@ -19,6 +21,7 @@ This command will:
 The deployment creates:
 - Resource Group (CTI-rg-prod)
 - Log Analytics Workspace (CTI-law-prod)
+- Microsoft Sentinel instance
 - Key Vault (CTI-kv-prod)
 - Log Analytics Query Pack (CTI-qp-prod)
 - Data Collection Rule for Syslog (CTI-dcr-syslog-prod)
@@ -30,10 +33,6 @@ To customize the deployment with different parameters:
 ```bash
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/main.bicep > main.bicep && curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/modules/resources.bicep > resources.bicep && mkdir -p modules && mv resources.bicep modules/ && az deployment sub create --location westus2 --template-file main.bicep --parameters prefix=YourPrefix environmentName=dev
 ```
-
-### Known Issues
-
-The CEF Data Collection Rule deployment may fail due to missing a required Data Collection Endpoint. This will be fixed in a future update.
 
 ## License
 MIT
