@@ -93,7 +93,7 @@ echo "────────────────────────�
 az deployment sub create \
   --name "$DEPLOY_NAME" \
   --location "$LOCATION" \
-  --template-uri "https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/refs/heads/main/main.bicep" \
+  --template-uri "https://github.com/DataGuys/CentralThreatIntelligenceV2/blob/main/main.bicep" \
   --parameters prefix="$PREFIX" environment="$ENVIRONMENT" location="$LOCATION"
 
 #------------------ Outputs -----------------------------------------------------
