@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+#set -euo pipefail
 
 ################################################################################
 # Central Threat Intelligence – unattended deploy script
