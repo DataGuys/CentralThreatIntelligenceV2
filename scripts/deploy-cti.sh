@@ -93,7 +93,7 @@ echo "────────────────────────�
 az deployment sub create \
   --name "$DEPLOY_NAME" \
   --location "$LOCATION" \
-  --template-file "../main.bicep" \
+  --template-file "./main.bicep" \
   --parameters prefix="$PREFIX" environment="$ENVIRONMENT" location="$LOCATION"
 
 #------------------ Outputs -----------------------------------------------------
@@ -106,7 +106,7 @@ RESOURCE_GROUP=$(jq -r '.resourceGroupName.value' <<< "$OUTPUTS")
 #------------------ Custom tables ----------------------------------------------
 echo "[+] Creating custom Log Analytics tables in '$WORKSPACE_NAME'…"
 
-TEMP_JSON="../tables/custom-tables.json"
+TEMP_JSON="./tables/custom-tables.json"
 
 jq -c '.[]' "$TEMP_JSON" | while read -r tbl; do
   TBL_NAME=$(jq -r '.name'    <<< "$tbl")
