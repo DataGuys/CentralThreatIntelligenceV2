@@ -70,38 +70,6 @@ resource dcrSyslog 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   }
 }
 
-// Placeholder CEF rule – add parsers later
-resource dcrCef 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
-  name: '${prefix}-dcr-cef-${environment}'
-  location: location
-  properties: {
-    description: 'CEF collection for CTI'
-    dataSources: {
-      logFiles: [
-        {
-          name: 'cefSource'
-          streams: ['Microsoft-CustomLogs']
-          filePatterns: ['/var/log/messages']
-          format: 'text'
-        }
-      ]
-    }
-    destinations: {
-      logAnalytics: [
-        {
-          name: 'lawDest'
-          workspaceResourceId: law.id
-        }
-      ]
-    }
-    dataFlows: [
-      {
-        streams: [ 'Microsoft-CustomLogs' ]
-        destinations: [ 'lawDest' ]
-      }
-    ]
-  }
-}
 
 // ---------- TAXII / STIX ingestion via AMA HTTP Push ----------
 // Data Collection Endpoint exposes an HTTP endpoint your Logic App / Function will POST STIX JSON to.
