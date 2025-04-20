@@ -13,15 +13,6 @@ echo "Downloading Bicep files..."
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/main.bicep > main.bicep
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/modules/resources.bicep > resources.bicep
 
-# Create proper directory structure
-mkdir -p modules
-mv resources.bicep modules/
-
-# Fix the main.bicep file to use correct module path
-# The error suggests there's an issue with the module referencing another module
-# Let's inspect and potentially fix the resources.bicep file
-sed -i 's|modules/resources.bicep|resources.bicep|g' main.bicep
-
 # Deploy the Bicep template
 echo "Deploying Bicep template..."
 az deployment sub create --location $LOCATION --template-file main.bicep --parameters prefix=$PREFIX environmentName=$ENVIRONMENT
