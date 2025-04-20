@@ -1,203 +1,61 @@
+targetScope = 'subscription'
+
 // Parameters
-param location string
-param logAnalyticsWorkspaceName string
-param keyVaultName string
-param dcRuleSyslogName string
-param dcRuleCEFName string
-param queryPackName string
-param tags object
+@description('Location for all resources')
+param location string = deployment().location
+
+@description('Prefix for all resources')
+param prefix string = 'demo'
+
+@description('Environment name')
+@allowed([
+  'dev'
+  'test'
+  'prod'
+])
+param environmentName string = 'dev'
+
+@description('Tags for all resources')
+param tags object = {
+  environment: environmentName
+  project: 'bicep-deployment'
+}
 
 // Variables
-var tenantId = subscription().tenantId
-var defaultKQLQuery = 'AzureDiagnostics | where Category == "AzureFirewallNetworkRule" | take 10'
+var resourceGroupName = '${prefix}-rg-${environmentName}'
+var logAnalyticsWorkspaceName = '${prefix}-law-${environmentName}'
+var keyVaultName = '${prefix}-kv-${environmentName}'
+var dcRuleSyslogName = '${prefix}-dcr-syslog-${environmentName}'
+var queryPackName = '${prefix}-qp-${environmentName}'
+var sentinelName = 'SecurityInsights(${logAnalyticsWorkspaceName})'
 
-// Log Analytics Workspace
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
-  name: logAnalyticsWorkspaceName
+// Create Resource Group
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
+  name: resourceGroupName
   location: location
   tags: tags
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: 30
-    features: {
-      enableLogAccessUsingOnlyResourcePermissions: true
-    }
-    workspaceCapping: {
-      dailyQuotaGb: -1
-    }
-  }
 }
 
-// Key Vault
-resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
-  name: keyVaultName
-  location: location
-  tags: tags
-  properties: {
-    enabledForDeployment: true
-    enabledForDiskEncryption: true
-    enabledForTemplateDeployment: true
-    tenantId: tenantId
-    enableSoftDelete: true
-    softDeleteRetentionInDays: 90
-    sku: {
-      family: 'A'
-      name: 'standard'
-    }
-    accessPolicies: []
-  }
-}
-
-// Data Collection Rule for Syslog
-resource dcRuleSyslog 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
-  name: dcRuleSyslogName
-  location: location
-  tags: tags
-  properties: {
-    dataSources: {
-      syslog: [
-        {
-          name: 'syslogBase'
-          streams: [
-            'Microsoft-Syslog'
-          ]
-          facilityNames: [
-            'auth'
-            'authpriv'
-            'cron'
-            'daemon'
-            'mark'
-            'kern'
-            'local0'
-            'local1'
-            'local2'
-            'local3'
-            'local4'
-            'local5'
-            'local6'
-            'local7'
-            'lpr'
-            'mail'
-            'news'
-            'syslog'
-            'user'
-            'uucp'
-          ]
-          logLevels: [
-            'Debug'
-            'Info'
-            'Notice'
-            'Warning'
-            'Error'
-            'Critical'
-            'Alert'
-            'Emergency'
-          ]
-        }
-      ]
-    }
-    destinations: {
-      logAnalytics: [
-        {
-          name: 'la-destination'
-          workspaceResourceId: logAnalyticsWorkspace.id
-        }
-      ]
-    }
-    dataFlows: [
-      {
-        streams: [
-          'Microsoft-Syslog'
-        ]
-        destinations: [
-          'la-destination'
-        ]
-      }
-    ]
-  }
-}
-
-// Data Collection Rule for CEF
-resource dcRuleCEF 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
-  name: dcRuleCEFName
-  location: location
-  tags: tags
-  properties: {
-    dataSources: {
-      logFiles: [
-        {
-          name: 'cefLogs'
-          streams: [
-            'Microsoft-CommonSecurityLog'
-          ]
-          filePatterns: [
-            '/var/log/messages'
-            '/var/log/syslog'
-            '/var/log/CEF/*.log'
-          ]
-          format: 'text'
-          settings: {
-            text: {
-              recordStartTimestampFormat: 'ISO 8601'
-            }
-          }
-        }
-      ]
-    }
-    destinations: {
-      logAnalytics: [
-        {
-          name: 'la-destination'
-          workspaceResourceId: logAnalyticsWorkspace.id
-        }
-      ]
-    }
-    dataFlows: [
-      {
-        streams: [
-          'Microsoft-CommonSecurityLog'
-        ]
-        destinations: [
-          'la-destination'
-        ]
-      }
-    ]
-  }
-}
-
-// Log Analytics Query Pack
-resource queryPack 'Microsoft.OperationalInsights/queryPacks@2019-09-01' = {
-  name: queryPackName
-  location: location
-  tags: tags
-  properties: {}
-}
-
-// Sample Query in the Query Pack
-resource sampleQuery 'Microsoft.OperationalInsights/queryPacks/queries@2019-09-01' = {
-  parent: queryPack
-  name: guid('sampleQuery', queryPackName)
-  properties: {
-    displayName: 'Sample Azure Firewall Network Rule Query'
-    description: 'Sample query to view Azure Firewall Network Rules'
-    body: defaultKQLQuery
-    related: {
-      categories: [
-        'security'
-        'audit'
-      ]
-      resourceTypes: [
-        'microsoft.network/azurefirewalls'
-      ]
-    }
+// Deploy resources to the Resource Group
+module resources 'modules/resources.bicep' = {
+  name: 'resourcesDeployment'
+  scope: resourceGroup
+  params: {
+    location: location
+    logAnalyticsWorkspaceName: logAnalyticsWorkspaceName
+    keyVaultName: keyVaultName
+    dcRuleSyslogName: dcRuleSyslogName
+    queryPackName: queryPackName
+    sentinelName: sentinelName
+    tags: tags
   }
 }
 
 // Outputs
-output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
-output keyVaultId string = keyVault.id
-output dcRuleSyslogId string = dcRuleSyslog.id
-output dcRuleCEFId string = dcRuleCEF.id
-output queryPackId string = queryPack.id
+output resourceGroupId string = resourceGroup.id
+output resourceGroupName string = resourceGroup.name
+output logAnalyticsWorkspaceId string = resources.outputs.logAnalyticsWorkspaceId
+output keyVaultId string = resources.outputs.keyVaultId
+output dcRuleSyslogId string = resources.outputs.dcRuleSyslogId
+output queryPackId string = resources.outputs.queryPackId
+output sentinelId string = resources.outputs.sentinelId
