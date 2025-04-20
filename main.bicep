@@ -1,4 +1,4 @@
-trtargetScope = 'subscription'
+targetScope = 'subscription'
 
 // Parameters
 @description('Location for all resources')
