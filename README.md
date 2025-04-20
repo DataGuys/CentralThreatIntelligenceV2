@@ -3,7 +3,6 @@
 A minimal, cost‑efficient Microsoft Sentinel landing zone that spins up:
 
 * **Log Analytics Workspace** with 30‑day retention
-* **Microsoft Sentinel** solution enabled
 * **Azure Key Vault** for secret storage (RBAC‑enabled)
 * **Data Collection Rules** for Syslog and CEF inputs
 
