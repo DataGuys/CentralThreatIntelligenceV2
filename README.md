@@ -9,7 +9,7 @@ A minimal, cost‑efficient Microsoft Sentinel landing zone that spins up:
 
 ---
 
-## 🌐 Quick start (Azure Cloud Shell)
+## Quick start: full deployment (Cloud Shell)
 
 ```bash
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/scripts/deploy-cti.sh | bash
