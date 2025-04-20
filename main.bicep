@@ -1,11 +1,11 @@
-targetScope = 'subscription'
+trtargetScope = 'subscription'
 
 // Parameters
 @description('Location for all resources')
 param location string = deployment().location
 
 @description('Prefix for all resources')
-param prefix string = 'demo'
+param prefix string = 'CTI'
 
 @description('Environment name')
 @allowed([
@@ -18,7 +18,7 @@ param environmentName string = 'dev'
 @description('Tags for all resources')
 param tags object = {
   environment: environmentName
-  project: 'bicep-deployment'
+  project: 'CentralThreatIntelligence'
 }
 
 // Variables
