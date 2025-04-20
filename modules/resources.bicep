@@ -18,12 +18,13 @@ resource law 'Microsoft.OperationalInsights/workspaces@2023-10-01' = {
   tags: tags
 }
 
-// Enable Microsoft Sentinel on the workspace
+// enable Sentinel
 resource sentinel 'Microsoft.OperationalInsights/workspaces/providers@2022-10-01-preview' = {
   name: '${law.name}/Microsoft.SecurityInsights'
   kind: 'SecurityInsights'
 }
 
+// Key Vault (RBAC‑mode)
 resource kv 'Microsoft.KeyVault/vaults@2023-02-01' = {
   name: kvName
   location: location
@@ -38,25 +39,17 @@ resource kv 'Microsoft.KeyVault/vaults@2023-02-01' = {
   tags: tags
 }
 
-// Syslog DCR
+// --- Data Collection Rules ---
 resource dcrSyslog 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   name: '${prefix}-dcr-syslog-${environment}'
   location: location
   properties: {
-    description: 'Syslog DCR for Central Threat Intelligence'
+    description: 'Syslog collection for CTI'
     dataSources: {
       syslog: [
         {
           facilityNames: [ 'auth' 'authpriv' 'daemon' 'local0' ]
-          logLevels: [
-            'Informational'
-            'Notice'
-            'Warning'
-            'Error'
-            'Critical'
-            'Alert'
-            'Emergency'
-          ]
+          logLevels: [ 'Informational','Notice','Warning','Error','Critical','Alert','Emergency' ]
           name: 'syslogSource'
         }
       ]
@@ -78,12 +71,12 @@ resource dcrSyslog 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   }
 }
 
-// CEF DCR (placeholder – extend as needed)
+// placeholder CEF rule – add parsers later
 resource dcrCef 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   name: '${prefix}-dcr-cef-${environment}'
   location: location
   properties: {
-    description: 'CEF DCR for Central Threat Intelligence'
+    description: 'CEF collection for CTI'
     dataSources: {
       linuxPerformanceCounter: []
     }
@@ -104,5 +97,7 @@ resource dcrCef 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   }
 }
 
-output workspaceId string   = law.id
-output keyVaultUri string   = kv.properties.vaultUri
+// outputs for automation
+output workspaceId       string = law.id
+output workspaceName     string = workspaceName
+output keyVaultUri       string = kv.properties.vaultUri
