@@ -13,7 +13,7 @@ param prefix string = 'CTI'
   'test'
   'prod'
 ])
-param environmentName string = 'dev'
+param environmentName string = 'prod'
 
 @description('Tags for all resources')
 param tags object = {
