@@ -9,13 +9,15 @@ var workspaceName = '${prefix}-law-${environment}'
 var kvName        = toLower(replace('${prefix}-kv-${environment}', '-', ''))
 
 // ---------- Core resources ----------
-resource law 'Microsoft.OperationalInsights/workspaces@2023-10-01' = {
+resource law 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: workspaceName
   location: location
-  sku: {
-    name: 'PerGB2018'
+  properties: {
+    retentionInDays: 30
+    sku: {
+      name: 'PerGB2018'
+    }
   }
-  retentionInDays: 30
   tags: tags
 }
 
@@ -45,7 +47,7 @@ resource dcrSyslog 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
     dataSources: {
       syslog: [
         {
-          facilityNames: [ 'auth' 'authpriv' 'daemon' 'local0' ]
+          facilityNames: [ 'auth', 'authpriv', 'daemon', 'local0' ]
           logLevels: [ 'Informational','Notice','Warning','Error','Critical','Alert','Emergency' ]
           name: 'syslogSource'
         }
@@ -75,7 +77,14 @@ resource dcrCef 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   properties: {
     description: 'CEF collection for CTI'
     dataSources: {
-      linuxPerformanceCounter: []
+      logFiles: [
+        {
+          name: 'cefSource'
+          streams: ['Microsoft-CustomLogs']
+          filePatterns: ['/var/log/messages']
+          format: 'text'
+        }
+      ]
     }
     destinations: {
       logAnalytics: [
@@ -114,14 +123,16 @@ resource dcrStix 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   properties: {
     dataCollectionEndpointId: dce.id
     description: 'Custom log ingestion for TAXII / STIX feeds (JSON)'
-    dataSources: {
-      logs: [
-        {
-          name: 'stixLogSource'
-          stream: 'Custom-CTIStix_CL'  // table will appear as CTIStix_CL
-          format: 'json'
-        }
-      ]
+    streamDeclarations: {
+      'Custom-CTIStix_CL': {  // table will appear as CTIStix_CL
+        columns: [
+          {
+            name: 'TimeGenerated'
+            type: 'datetime'
+          }
+          // Add other column definitions as needed
+        ]
+      }
     }
     destinations: {
       logAnalytics: [
@@ -134,106 +145,6 @@ resource dcrStix 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
     dataFlows: [
       {
         streams: [ 'Custom-CTIStix_CL' ]
-        destinations: [ 'lawDest' ]
-      }
-    ]
-  }
-}
-
-// ---------- Outputs ----------
-output workspaceId              string = law.id
-output workspaceName            string = workspaceName
-output keyVaultUri              string = kv.properties.vaultUri
-output stixIngestionEndpointUri string = dce.properties.logsIngestionEndpoint
-```bicep
-targetScope = 'resourceGroup'
-
-param prefix       string
-param environment  string
-param location     string = resourceGroup().location
-param tags         object
-
-var workspaceName = '${prefix}-law-${environment}'
-var kvName        = toLower(replace('${prefix}-kv-${environment}', '-', ''))
-
-resource law 'Microsoft.OperationalInsights/workspaces@2023-10-01' = {
-  name: workspaceName
-  location: location
-  sku: {
-    name: 'PerGB2018'
-  }
-  retentionInDays: 30
-  tags: tags
-}
-
-
-// Key Vault (RBAC‑mode)
-resource kv 'Microsoft.KeyVault/vaults@2023-02-01' = {
-  name: kvName
-  location: location
-  properties: {
-    enableRbacAuthorization: true
-    sku: {
-      family: 'A'
-      name: 'standard'
-    }
-    tenantId: subscription().tenantId
-  }
-  tags: tags
-}
-
-// --- Data Collection Rules ---
-resource dcrSyslog 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
-  name: '${prefix}-dcr-syslog-${environment}'
-  location: location
-  properties: {
-    description: 'Syslog collection for CTI'
-    dataSources: {
-      syslog: [
-        {
-          facilityNames: [ 'auth' 'authpriv' 'daemon' 'local0' ]
-          logLevels: [ 'Informational','Notice','Warning','Error','Critical','Alert','Emergency' ]
-          name: 'syslogSource'
-        }
-      ]
-    }
-    destinations: {
-      logAnalytics: [
-        {
-          name: 'lawDest'
-          workspaceResourceId: law.id
-        }
-      ]
-    }
-    dataFlows: [
-      {
-        streams: [ 'Microsoft-Syslog' ]
-        destinations: [ 'lawDest' ]
-      }
-    ]
-  }
-}
-
-// placeholder CEF rule – add parsers later
-resource dcrCef 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
-  name: '${prefix}-dcr-cef-${environment}'
-  location: location
-  properties: {
-    description: 'CEF collection for CTI'
-    dataSources: {
-      linuxPerformanceCounter: []
-    }
-    destinations: {
-      logAnalytics: [
-        {
-          name: 'lawDest'
-          workspaceResourceId: law.id
-        }
-      ]
-    }
-    dataFlows: [
-      {
-        streams: [ 'Microsoft-CustomLogs' ]
         destinations: [ 'lawDest' ]
       }
     ]

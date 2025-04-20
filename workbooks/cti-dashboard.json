@@ -1,5 +1,5 @@
-@@ -0,0 +1,1104 @@
- {
+
+{
    "version": "Notebook/1.0",
    "items": [
      {
@@ -1078,22 +1078,7 @@
      {
        "type": 1,
        "content": {
-         "json": "## Implementation Instructions\n\n### Deployment Steps\n\n1. **Save this workbook** in your Microsoft Sentinel workspace associated with your CTI solution\n2. **Grant permissions** to users who need to submit indicators:\n   - Users need `Microsoft Sentinel Contributor` role on the Log Analytics workspace\n   - Or create a custom role with `microsoft.operationalinsights/workspaces/write` permission\n\n### Data Function Implementation\n\nFor production use, you'll need to implement the actual data submission. Replace the \"DataToBeInserted\" visualizations with function calls like:\n\n```kql\n_Data_PutBlob(\"CTI_IPIndicators_CL\", 
-   dynamic({
-     \"IPAddress_s\": \"{IPAddress}\", 
-     \"IndicatorId_g\": guid(), 
-     \"ConfidenceScore_d\": {IPConfidenceScore}, 
-     \"SourceFeed_s\": \"{SourceFeed}\", 
-     \"FirstSeen_t\": now(), 
-     \"LastSeen_t\": now(), 
-     \"ExpirationDateTime_t\": now() + {IPExpirationDays}d, 
-     \"ThreatType_s\": \"{IPThreatType}\", 
-     \"TLP_s\": \"{IPTLP}\", 
-     \"Description_s\": \"{IPDescription}\", 
-     \"Active_b\": true
-   })
- )
- ```\n\n### Additional Features to Consider\n\n- **Bulk Upload**: Add CSV import functionality for batch submissions\n- **MITRE ATT&CK Mapping**: Add fields to associate indicators with MITRE tactics and techniques\n- **Cross-Table Correlation**: Add the ability to link related indicators\n- **Approval Workflow**: Implement an approval step for submitted indicators\n- **Custom Field Extension**: Add organization-specific fields"
+ "json": "## Implementation Instructions\n\n### Deployment Steps\n\n1. **Save this workbook** in your Microsoft Sentinel workspace associated with your CTI solution\n2. **Grant permissions** to users who need to submit indicators:\n   - Users need `Microsoft Sentinel Contributor` role on the Log Analytics workspace\n   - Or create a custom role with `microsoft.operationalinsights/workspaces/write` permission\n\n### Data Function Implementation\n\nFor production use, you'll need to implement the actual data submission. Replace the \"DataToBeInserted\" visualizations with function calls like:\n\n```kql\n_Data_PutBlob(\"CTI_IPIndicators_CL\", \n  dynamic({\n    \"IPAddress_s\": \"{IPAddress}\", \n    \"IndicatorId_g\": guid(), \n    \"ConfidenceScore_d\": {IPConfidenceScore}, \n    \"SourceFeed_s\": \"{SourceFeed}\", \n    \"FirstSeen_t\": now(), \n    \"LastSeen_t\": now(), \n    \"ExpirationDateTime_t\": now() + {IPExpirationDays}d, \n    \"ThreatType_s\": \"{IPThreatType}\", \n    \"TLP_s\": \"{IPTLP}\", \n    \"Description_s\": \"{IPDescription}\", \n    \"Active_b\": true\n  })\n)\n```\n\n### Additional Features to Consider\n\n- **Bulk Upload**: Add CSV import functionality for batch submissions\n- **MITRE ATT&CK Mapping**: Add fields to associate indicators with MITRE tactics and techniques\n- **Cross-Table Correlation**: Add the ability to link related indicators\n- **Approval Workflow**: Implement an approval step for submitted indicators\n- **Custom Field Extension**: Add organization-specific fields"
        },
        "name": "ImplementationInstructions"
      }
@@ -1101,5 +1086,5 @@
    "fallbackResourceIds": [
      "Azure Monitor"
    ],
-   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+   "$schema": "https://raw.githubusercontent.com/Microsoft/Application-Insights-Workbooks/master/schema/workbook.json"
  }
