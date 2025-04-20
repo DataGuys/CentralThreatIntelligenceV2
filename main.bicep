@@ -15,12 +15,6 @@ param prefix string = 'CTI'
 ])
 param environmentName string = 'prod'
 
-@description('Tags for all resources')
-param tags object = {
-  environment: environmentName
-  project: 'CentralThreatIntelligence'
-}
-
 // Variables
 var resourceGroupName = '${prefix}-rg-${environmentName}'
 var logAnalyticsWorkspaceName = '${prefix}-law-${environmentName}'
@@ -28,6 +22,11 @@ var keyVaultName = '${prefix}-kv-${environmentName}'
 var dcRuleSyslogName = '${prefix}-dcr-syslog-${environmentName}'
 var queryPackName = '${prefix}-qp-${environmentName}'
 var sentinelName = 'SecurityInsights(${logAnalyticsWorkspaceName})'
+@description('Tags for all resources')
+param tags object = {
+  environment: environmentName
+  project: 'CentralThreatIntelligence'
+}
 
 // Create Resource Group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2022-09-01' = {
