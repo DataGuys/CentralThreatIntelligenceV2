@@ -1,3 +1,4 @@
+// main.bicep - Fixed version
 targetScope = 'subscription'
 
 @description('Prefix for resource names')
@@ -26,17 +27,17 @@ resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
 
 module resources './modules/resources.bicep' = {
   name: 'centralThreatIntelligence'
-  scope: rg
+  scope: resourceGroup(rgName)
   params: {
-    prefix:       prefix
-    environment:  environment
-    location:     location
-    tags:         tags
+    prefix: prefix
+    environment: environment
+    location: location
+    tags: tags
   }
 }
 
-// surface key outputs for downstream automation
-output workspaceId        string = resources.outputs.workspaceId
-output workspaceName      string = resources.outputs.workspaceName
-output resourceGroupName  string = rgName
-output keyVaultUri        string = resources.outputs.keyVaultUri
+// Fix the output references to match what the module actually returns
+output workspaceId string = resources.outputs.workspaceId
+output workspaceName string = resources.outputs.workspaceName
+output resourceGroupName string = rgName
+output keyVaultUri string = resources.outputs.keyVaultUri
