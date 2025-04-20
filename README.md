@@ -11,7 +11,18 @@ A minimal, cost‑efficient Microsoft Sentinel landing zone that spins up:
 
 ## Quick start: full deployment (Cloud Shell)
 
+### 1. Create the app registration
+
+#### 1 App Registration Deployment
+
 ```bash
+curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligence/main/create-cti-app.sh | tr -d '\r' | bash -s
+```
+
+### 2. Deploy the solution
+
+```bash
+SUB_ID=\"\"; PS3='Select subscription: '; mapfile -t SUBS < <(az account list --query \"[].{name:name,id:id}\" -o tsv); select SUB in \"\${SUBS[@]}\"; do [[ -n \$SUB ]] && az account set --subscription \"\${SUB##*$'\t'}\" && echo \"Switched to subscription: \${SUB%%$'\t'*}\" && CHOSEN_SUB_ID=\"\${SUB##*$'\t'}\" && break; done"
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/scripts/deploy-cti.sh | bash
 ```
 
