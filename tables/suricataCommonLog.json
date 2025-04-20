@@ -112,5 +112,6 @@
     },
     "retentionInDays": 30,
     "totalRetentionInDays": 90
+    "plan": "Analytics"
   }
 }
