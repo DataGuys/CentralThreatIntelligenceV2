@@ -3,15 +3,11 @@ targetScope = 'subscription'
 @description('Prefix for resource names')
 param prefix string = 'cti'
 
-@allowed([
-  'dev'
-  'test'
-  'prod'
-])
+@allowed(['dev','test','prod'])
 @description('Deployment environment')
 param environment string = 'prod'
 
-@description('Azure location for the resource group')
+@description('Azure region for the resource group')
 param location string = deployment().location
 
 @description('Tags applied to every resource')
@@ -32,9 +28,15 @@ module resources './modules/resources.bicep' = {
   name: 'centralThreatIntelligence'
   scope: rg
   params: {
-    prefix: prefix
-    location: location
-    environment: environment
-    tags: tags
+    prefix:       prefix
+    environment:  environment
+    location:     location
+    tags:         tags
   }
 }
+
+// surface key outputs for downstream automation
+output workspaceId        string = resources.outputs.workspaceId
+output workspaceName      string = resources.outputs.workspaceName
+output resourceGroupName  string = rgName
+output keyVaultUri        string = resources.outputs.keyVaultUri
