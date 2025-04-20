@@ -29,20 +29,6 @@ while getopts ":l:p:e:t:h" opt; do
   esac
 done
 
-#--- Azure login & subscription selection ---
-if ! az account show &>/dev/null; then
-  echo "[+] Login to Azure CLI…"
-  az login --only-show-errors
-fi
-
-echo "[+] Select Azure subscription:"
-mapfile -t SUBS < <(az account list --query "[].{name:name,id:id}" -o tsv)
-select SUB in "${SUBS[@]}"; do
-  [[ -n "$SUB" ]] && break
-done
-SUB_ID="${SUB##*$'	'}"
-az account set --subscription "$SUB_ID"
-
 # default location to the Cloud Shell region if none supplied
 if [[ -z "$LOCATION" ]]; then
   LOCATION="$(az configure -l --query "[?name=='cloud'].value" -o tsv 2>/dev/null || echo westus2)"
