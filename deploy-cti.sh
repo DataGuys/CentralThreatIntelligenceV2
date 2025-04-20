@@ -11,7 +11,7 @@ echo "Deploying CentralThreatIntelligenceV2..."
 # Download Bicep files
 echo "Downloading Bicep files..."
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/main.bicep > main.bicep
-curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/modules/resources.bicep > resources.bicep
+curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/resources.bicep > resources.bicep
 
 # Deploy the Bicep template
 echo "Deploying Bicep template..."
