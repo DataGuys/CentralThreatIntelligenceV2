@@ -1,40 +1,51 @@
-#!/bin/bash
-# deploy-cti.sh
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Set variables
-PREFIX="CTI"
+REPO_BRANCH="main"
+RAW_BASE="https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/${REPO_BRANCH}"
+
+usage() {
+  echo "Usage: deploy-cti.sh [-l location] [-p prefix] [-e environment]"
+  exit 1
+}
+
+LOCATION=""
+PREFIX="cti"
 ENVIRONMENT="prod"
-LOCATION="eastus"
 
-echo "Deploying CentralThreatIntelligenceV2..."
+while getopts ":l:p:e:h" opt; do
+  case $opt in
+    l) LOCATION=$OPTARG ;;
+    p) PREFIX=$OPTARG ;;
+    e) ENVIRONMENT=$OPTARG ;;
+    h|*) usage ;;
+  esac
+done
 
-# Download Bicep files
-echo "Downloading Bicep files..."
-curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/main.bicep > main.bicep
-curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/resources.bicep > resources.bicep
+# Ensure Azure CLI is logged in
+if ! az account show &>/dev/null; then
+  echo "[+] Login to Azure CLI..."
+  az login
+fi
 
-# Deploy the Bicep template
-echo "Deploying Bicep template..."
-az deployment sub create --location $LOCATION --template-file main.bicep --parameters prefix=$PREFIX environmentName=$ENVIRONMENT
+echo "[+] Select Azure subscription:"
+mapfile -t SUBS < <(az account list --query "[].{name:name, id:id}" -o tsv)
+select SUB in "${SUBS[@]}"; do
+  [[ -n "$SUB" ]] && break
+done
+SUB_ID="${SUB##*$'\t'}"
+az account set --subscription "$SUB_ID"
 
-# Get resource group and workspace names
-RESOURCE_GROUP="${PREFIX}-rg-${ENVIRONMENT}"
-WORKSPACE_NAME="${PREFIX}-law-${ENVIRONMENT}"
+# Pick a location if none supplied
+if [[ -z "$LOCATION" ]]; then
+  LOCATION="$(az account list-locations --query "[?name=='westus2'].name" -o tsv)"
+fi
 
-# Wait for resources to be provisioned
-echo "Waiting for resources to be fully provisioned..."
-sleep 30
+echo "[+] Deploying Central Threat Intelligence (branch: $REPO_BRANCH) ..."
+az deployment sub create \
+  --name "cti-$(date +%Y%m%d%H%M%S)" \
+  --location "$LOCATION" \
+  --template-uri "$RAW_BASE/main.bicep" \
+  --parameters prefix="$PREFIX" environment="$ENVIRONMENT" location="$LOCATION"
 
-# Download the custom-tables.json file
-echo "Downloading custom-tables.json..."
-curl -sL "https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/refs/heads/main/custom-tables.json" > custom-tables.json
-
-# Deploy custom tables
-echo "Deploying custom tables to $WORKSPACE_NAME in $RESOURCE_GROUP..."
-az deployment group create \
-    --name "CTI-CustomTables-$(date +%Y%m%d%H%M%S)" \
-    --resource-group "$RESOURCE_GROUP" \
-    --template-file custom-tables.json \
-    --parameters ctiWorkspaceName="$WORKSPACE_NAME"
-
-echo "Deployment completed!"
+echo "[✓] Deployment request submitted. Check the Azure Portal for progress."
