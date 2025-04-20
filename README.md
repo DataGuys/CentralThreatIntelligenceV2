@@ -3,7 +3,7 @@
 A minimal, cost‑efficient Microsoft Sentinel landing zone that spins up:
 
 * **Log Analytics Workspace** with 30‑day retention
-* **Custom Threat Tables hosted on the Analytics Tier for cost control.
+* **Custom Threat Tables** hosted on the Analytics Tier for cost control
 * **Azure Key Vault** for secret storage (RBAC‑enabled)
 * **Data Collection Rules** for Syslog and CEF inputs
 
