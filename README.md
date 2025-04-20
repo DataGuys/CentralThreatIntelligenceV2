@@ -13,3 +13,11 @@ A minimal, cost‑efficient Microsoft Sentinel landing zone that spins up:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/scripts/deploy-cti.sh | bash
+```
+
+## Set table tiering from go with -t Analytics is the default or Basic / Auxiliary
+```bash
+curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/scripts/deploy-cti.sh \
+  | bash -s -- -t Analytics
+```
+
