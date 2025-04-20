@@ -39,19 +39,13 @@ if ! az account show &>/dev/null; then
     az login --only-show-errors
 fi
 
-# Subscription selection
-echo -e "\n${BLUE}Available subscriptions:${NC}"
-mapfile -t SUBS < <(az account list --query "[].{name:name,id:id}" -o tsv)
-PS3="Select subscription (Enter number): "
-select SUB in "${SUBS[@]}"; do
-    if [[ -n "$SUB" ]]; then
-        SUBSCRIPTION="${SUB##*$'\t'}"
-        SUBSCRIPTION_NAME="${SUB%%$'\t'*}"
-        echo -e "${GREEN}Selected subscription: ${SUBSCRIPTION_NAME}${NC}"
-        az account set --subscription "$SUBSCRIPTION"
-        break
-    fi
-done
+# Subscription selection - simplified version that works better with piped input
+echo -e "\n${BLUE}Getting current subscription...${NC}"
+CURRENT_SUB=$(az account show --query "id" -o tsv)
+CURRENT_SUB_NAME=$(az account show --query "name" -o tsv)
+echo -e "${GREEN}Using subscription: ${CURRENT_SUB_NAME} (${CURRENT_SUB})${NC}"
+echo -e "${YELLOW}To use a different subscription, press Ctrl+C and run 'az account set --subscription YOUR_SUB_ID' first${NC}"
+sleep 3
 
 # Parse command line arguments
 LOCATION=""
@@ -93,7 +87,7 @@ case "${TABLE_PLAN,,}" in
 esac
 
 echo -e "\n${BLUE}======================= Configuration =======================${NC}"
-echo -e " Subscription : ${SUBSCRIPTION_NAME}"
+echo -e " Subscription : ${CURRENT_SUB_NAME}"
 echo -e " Location     : ${LOCATION}"
 echo -e " Prefix       : ${PREFIX}"
 echo -e " Environment  : ${ENVIRONMENT}"
@@ -184,7 +178,7 @@ done
 
 # Step 5: Deploy Logic Apps
 echo -e "\n${BLUE}Step 5: Deploying Logic App connectors...${NC}"
-# Todo: Add logic app deployment when available
+# Logic app deployment will be implemented in a future update
 
 echo -e "\n${GREEN}===========================================================${NC}"
 echo -e "${GREEN}    Central Threat Intelligence V2 - Deployment Complete${NC}"
