@@ -75,4 +75,4 @@ done
 
 rm "$TEMP_JSON"
 
-echo "[✓] Deployment complete. Sentinel + custom tables are ready!"
+echo "[✓] Deployment complete. custom tables are ready!"
