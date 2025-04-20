@@ -1,37 +1,15 @@
-# CentralThreatIntelligenceV2
+# Central Threat Intelligence V2
 
-A bicep template for deploying a centralized security monitoring solution with Microsoft Sentinel.
+A minimal, cost‑efficient Microsoft Sentinel landing zone that spins up:
 
-## Quick Deployment
+* **Log Analytics Workspace** with 30‑day retention
+* **Microsoft Sentinel** solution enabled
+* **Azure Key Vault** for secret storage (RBAC‑enabled)
+* **Data Collection Rules** for Syslog and CEF inputs
 
-### Option 1: One-line Deployment (Basic)
+---
 
-To deploy the core components solution in Azure Cloud Shell (bash), run this command:
-
-```bash
-curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/main.bicep > main.bicep && curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/modules/resources.bicep > resources.bicep && mkdir -p modules && mv resources.bicep modules/ && az deployment sub create --location eastus --template-file main.bicep --parameters prefix=CTI environmentName=prod
-```
-
-Option 2: Complete Deployment with Custom Tables in Azure Cloud Shell (bash)
-For a complete deployment using the deployment script, including custom threat intelligence tables, use this command:
+## 🌐 Quick start (Azure Cloud Shell)
 
 ```bash
-curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/deploy-cti.sh > deploy-cti.sh && chmod +x deploy-cti.sh && ./deploy-cti.sh
-```
-
-This command will:
-
-Download the deployment script
-Make it executable
-Run it to deploy both the Bicep resources and the custom tables
-
-Resources Deployed
-The deployment creates:
-
-Resource Group (CTI-rg-prod)
-Log Analytics Workspace (CTI-law-prod)
-Microsoft Sentinel instance
-Key Vault (CTI-kv-prod)
-Log Analytics Query Pack (CTI-qp-prod)
-Data Collection Rule for Syslog (CTI-dcr-syslog-prod)
-Custom Threat Intelligence Tables
+curl -sL https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/main/scripts/deploy-cti.sh | bash
