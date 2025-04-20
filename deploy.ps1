@@ -6,16 +6,16 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$GithubRepoBaseUrl = "https://raw.githubusercontent.com/YourUsername/YourRepo/main",
+    [string]$GithubRepoBaseUrl = "https://raw.githubusercontent.com/DataGuys/CentralThreatIntelligenceV2/refs/heads/main",
     
     [Parameter(Mandatory = $false)]
     [string]$ResourceGroupLocation = "eastus",
     
     [Parameter(Mandatory = $false)]
-    [string]$EnvironmentName = "dev",
+    [string]$EnvironmentName = "prod",
     
     [Parameter(Mandatory = $false)]
-    [string]$Prefix = "demo",
+    [string]$Prefix = "CTI",
     
     [Parameter(Mandatory = $false)]
     [hashtable]$Tags = @{
