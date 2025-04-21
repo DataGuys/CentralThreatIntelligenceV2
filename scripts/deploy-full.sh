@@ -86,12 +86,16 @@ case "${TABLE_PLAN,,}" in
     *) echo -e "${RED}❌ Invalid table plan. Use Analytics | Basic | Auxiliary${NC}"; exit 1 ;;
 esac
 
+# Set resource group name
+RG_NAME="${PREFIX}-rg-${ENVIRONMENT}"
+
 echo -e "\n${BLUE}======================= Configuration =======================${NC}"
 echo -e " Subscription : ${CURRENT_SUB_NAME}"
 echo -e " Location     : ${LOCATION}"
 echo -e " Prefix       : ${PREFIX}"
 echo -e " Environment  : ${ENVIRONMENT}"
 echo -e " Table plan   : ${TABLE_PLAN}"
+echo -e " Resource Group: ${RG_NAME}"
 echo -e " Deployment   : ${DEPLOY_NAME}"
 echo -e "${BLUE}============================================================${NC}"
 
@@ -130,35 +134,56 @@ echo -e "${GREEN}✅ Deployment files downloaded successfully${NC}"
 echo -e "\n${BLUE}Step 3: Deploying infrastructure...${NC}"
 cd "${TEMP_DIR}"
 
+# Step 3a: Create resource group directly first
+echo -e "${YELLOW}Creating resource group ${RG_NAME}...${NC}"
+az group create --name "${RG_NAME}" --location "${LOCATION}" --tags "project=CentralThreatIntelligence" "environment=${ENVIRONMENT}"
+
+# Wait for resource group to be fully provisioned
+echo -e "${YELLOW}Waiting for resource group to be fully provisioned...${NC}"
+sleep 10
+
+# Verify resource group exists
+if ! az group show --name "${RG_NAME}" &>/dev/null; then
+    echo -e "${RED}❌ Resource group ${RG_NAME} was not created successfully${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Resource group ${RG_NAME} created successfully${NC}"
+
+# Step 3b: Deploy main template
 echo -e "${YELLOW}Deploying base infrastructure...${NC}"
-az deployment sub create \
+az deployment group create \
     --name "$DEPLOY_NAME" \
-    --location "$LOCATION" \
-    --template-file "./main.bicep" \
+    --resource-group "${RG_NAME}" \
+    --template-file "./modules/resources.bicep" \
     --parameters prefix="$PREFIX" environment="$ENVIRONMENT" location="$LOCATION"
 
 # Get outputs from deployment
-OUTPUTS=$(az deployment sub show --name "$DEPLOY_NAME" \
+OUTPUTS=$(az deployment group show --name "$DEPLOY_NAME" --resource-group "${RG_NAME}" \
          --query "properties.outputs" -o json)
 
 WORKSPACE_NAME=$(jq -r '.workspaceName.value' <<< "$OUTPUTS")
-RESOURCE_GROUP=$(jq -r '.resourceGroupName.value' <<< "$OUTPUTS")
+
+if [[ -z "$WORKSPACE_NAME" ]]; then
+    echo -e "${RED}❌ Failed to retrieve workspace name from deployment${NC}"
+    exit 1
+fi
 
 echo -e "${GREEN}✅ Base infrastructure deployed successfully${NC}"
-echo -e "    Resource Group: ${RESOURCE_GROUP}"
+echo -e "    Resource Group: ${RG_NAME}"
 echo -e "    Workspace Name: ${WORKSPACE_NAME}"
 
 # Step 4: Create custom tables
 echo -e "\n${BLUE}Step 4: Creating custom Log Analytics tables...${NC}"
 
-jq -c '.[]' "${TEMP_DIR}/tables/custom-tables.json" | while read -r tbl; do
+# Process each table from the tables.json file
+jq -c '.variables.tables[]' "${TEMP_DIR}/tables/custom-tables.json" | while read -r tbl; do
     TBL_NAME=$(jq -r '.name' <<< "$tbl")
     COLS=$(jq -c '.columns' <<< "$tbl")
     printf '  • Creating %-40s\r' "$TBL_NAME"
 
     # Create if missing (ignore 409 errors)
     az monitor log-analytics workspace table create \
-        --resource-group "$RESOURCE_GROUP" \
+        --resource-group "$RG_NAME" \
         --workspace-name "$WORKSPACE_NAME" \
         --name "$TBL_NAME" \
         --columns "$COLS" \
@@ -167,7 +192,7 @@ jq -c '.[]' "${TEMP_DIR}/tables/custom-tables.json" | while read -r tbl; do
 
     # Ensure plan matches requested tier
     az monitor log-analytics workspace table update \
-        --resource-group "$RESOURCE_GROUP" \
+        --resource-group "$RG_NAME" \
         --workspace-name "$WORKSPACE_NAME" \
         --name "$TBL_NAME" \
         --plan "$TABLE_PLAN" \
@@ -190,7 +215,7 @@ echo -e "   - Select your app: CTI-Solution"
 echo -e "   - Go to 'API permissions'"
 echo -e "   - Click 'Grant admin consent for <your-tenant>'"
 echo -e "\n2. Access your deployment resources:"
-echo -e "   - Resource Group: ${RESOURCE_GROUP}"
+echo -e "   - Resource Group: ${RG_NAME}"
 echo -e "   - Log Analytics Workspace: ${WORKSPACE_NAME}"
 echo -e "\n3. Review the custom tables in your workspace (${TABLE_PLAN} tier)"
 echo -e "\nStore your app credentials securely. They have been saved to: ${TEMP_DIR}/cti-app-credentials.env"
