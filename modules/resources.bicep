@@ -4,8 +4,11 @@ targetScope = 'resourceGroup'
 param prefix string
 param environment string
 param location string = resourceGroup().location
-param tags object
-
+param tagsMap object = {
+  environment: environment
+  owner: 'security-team'
+  project: 'threat-intelligence'
+}
 // Resource naming variables
 var workspaceName = '${prefix}-law-${environment}'
 var keyVaultName = toLower(replace('${prefix}-kv-${environment}', '-', ''))
@@ -25,7 +28,7 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10
       name: 'PerGB2018'
     }
   }
-  tags: tags
+  tags: tagsMap
 }
 
 // Key Vault for secure storage of secrets and credentials
@@ -41,7 +44,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-02-01' = {
     }
     tenantId: subscription().tenantId
   }
-  tags: tags
+  tags: tagsMap
 }
 
 // ==================== Data Collection Infrastructure ====================
@@ -58,7 +61,7 @@ resource dataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2021
       publicNetworkAccess: 'Enabled' // Note: Should be restricted in production
     }
   }
-  tags: tags
+  tags: tagsMap
 }
 
 // Syslog Collection Rule for standard Linux logs
@@ -104,7 +107,7 @@ resource syslogCollectionRule 'Microsoft.Insights/dataCollectionRules@2022-06-01
       }
     ]
   }
-  tags: tags
+  tags: tagsMap
 }
 
 // STIX Data Collection Rule for threat intelligence ingestion
@@ -159,7 +162,7 @@ resource stixCollectionRule 'Microsoft.Insights/dataCollectionRules@2022-06-01' 
       }
     ]
   }
-  tags: tags
+  tags: tagsMap
 }
 
 // ==================== Outputs ====================
