@@ -144,6 +144,7 @@ var ctiTables = [
   {
     name: 'CTI_ThreatIntelIndicator_CL'
     columns: [
+      { name: 'TimeGenerated', type: 'datetime' }
       { name: 'Type_s', type: 'string' }
       { name: 'Value_s', type: 'string' }
       { name: 'Pattern_s', type: 'string' }
@@ -151,7 +152,7 @@ var ctiTables = [
       { name: 'Name_s', type: 'string' }
       { name: 'Description_s', type: 'string' }
       { name: 'Action_s', type: 'string' }
-      { name: 'Confidence_d', type: 'double' }
+      { name: 'Confidence_d', type: 'string' }
       { name: 'ValidFrom_t', type: 'datetime' }
       { name: 'ValidUntil_t', type: 'datetime' }
       { name: 'CreatedTimeUtc_t', type: 'datetime' }
@@ -173,8 +174,9 @@ var ctiTables = [
   {
     name: 'CTI_IPIndicators_CL'
     columns: [
+      { name: 'TimeGenerated', type: 'datetime' }
       { name: 'IPAddress_s', type: 'string' }
-      { name: 'ConfidenceScore_d', type: 'double' }
+      { name: 'ConfidenceScore_d', type: 'string' }
       { name: 'SourceFeed_s', type: 'string' }
       { name: 'FirstSeen_t', type: 'datetime' }
       { name: 'LastSeen_t', type: 'datetime' }
@@ -198,8 +200,9 @@ var ctiTables = [
   {
     name: 'CTI_DomainIndicators_CL'
     columns: [
+      { name: 'TimeGenerated', type: 'datetime' }
       { name: 'Domain_s', type: 'string' }
-      { name: 'ConfidenceScore_d', type: 'double' }
+      { name: 'ConfidenceScore_d', type: 'string' }
       { name: 'SourceFeed_s', type: 'string' }
       { name: 'FirstSeen_t', type: 'datetime' }
       { name: 'LastSeen_t', type: 'datetime' }
@@ -221,8 +224,9 @@ var ctiTables = [
   {
     name: 'CTI_URLIndicators_CL'
     columns: [
+      { name: 'TimeGenerated', type: 'datetime' }
       { name: 'URL_s', type: 'string' }
-      { name: 'ConfidenceScore_d', type: 'double' }
+      { name: 'ConfidenceScore_d', type: 'string' }
       { name: 'SourceFeed_s', type: 'string' }
       { name: 'FirstSeen_t', type: 'datetime' }
       { name: 'LastSeen_t', type: 'datetime' }
@@ -244,10 +248,11 @@ var ctiTables = [
   {
     name: 'CTI_FileHashIndicators_CL'
     columns: [
+      { name: 'TimeGenerated', type: 'datetime' }
       { name: 'SHA256_s', type: 'string' }
       { name: 'MD5_s', type: 'string' }
       { name: 'SHA1_s', type: 'string' }
-      { name: 'ConfidenceScore_d', type: 'double' }
+      { name: 'ConfidenceScore_d', type: 'string' }
       { name: 'SourceFeed_s', type: 'string' }
       { name: 'FirstSeen_t', type: 'datetime' }
       { name: 'LastSeen_t', type: 'datetime' }
