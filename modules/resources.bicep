@@ -9,11 +9,12 @@ param tagsMap object = {
   owner: 'security-team'
   project: 'threat-intelligence'
 }
-// Resource naming variables
+
+// Resource naming variables with uniqueness for Key Vault
+var uniqueSuffix = uniqueString(resourceGroup().id)
 var workspaceName = '${prefix}-law-${environment}'
-var keyVaultName = toLower(replace('${prefix}-kv-${environment}', '-', ''))
+var keyVaultName = toLower(replace('${prefix}-kv-${environment}-${take(uniqueSuffix, 6)}', '-', ''))
 var dcrSyslogName = '${prefix}-dcr-syslog-${environment}'
-var dcrStixName = '${prefix}-dcr-stix-${environment}'
 var dceName = '${prefix}-dce-${environment}'
 
 // ==================== Core Resources ====================
@@ -73,6 +74,7 @@ resource syslogCollectionRule 'Microsoft.Insights/dataCollectionRules@2022-06-01
     dataSources: {
       syslog: [
         {
+          streams: ['Microsoft-Syslog']
           facilityNames: [
             'auth'
             'authpriv'
@@ -80,9 +82,8 @@ resource syslogCollectionRule 'Microsoft.Insights/dataCollectionRules@2022-06-01
             'local0'
           ]
           logLevels: [
-            'Informational'
-            'Notice'
             'Warning'
+            'Notice'
             'Error'
             'Critical'
             'Alert'
@@ -110,66 +111,11 @@ resource syslogCollectionRule 'Microsoft.Insights/dataCollectionRules@2022-06-01
   tags: tagsMap
 }
 
-// STIX Data Collection Rule for threat intelligence ingestion
-resource stixCollectionRule 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
-  name: dcrStixName
-  location: location
-  properties: {
-    dataCollectionEndpointId: dataCollectionEndpoint.id
-    description: 'Custom log ingestion for TAXII/STIX feeds (JSON)'
-    streamDeclarations: {
-      'Custom-CTIStix_CL': {
-        columns: [
-          {
-            name: 'TimeGenerated'
-            type: 'datetime'
-          }
-          {
-            name: 'RawSTIX'
-            type: 'string'
-          }
-          {
-            name: 'STIXType'
-            type: 'string'
-          }
-          {
-            name: 'STIXId'
-            type: 'string'
-          }
-          {
-            name: 'CreatedBy'
-            type: 'string'
-          }
-          {
-            name: 'Source'
-            type: 'string'
-          }
-        ]
-      }
-    }
-    destinations: {
-      logAnalytics: [
-        {
-          name: 'lawDest'
-          workspaceResourceId: logAnalyticsWorkspace.id
-        }
-      ]
-    }
-    dataFlows: [
-      {
-        streams: ['Custom-CTIStix_CL']
-        destinations: ['lawDest']
-      }
-    ]
-  }
-  tags: tagsMap
-}
-
 // ==================== Outputs ====================
 
 output workspaceId string = logAnalyticsWorkspace.id
 output workspaceName string = workspaceName
 output keyVaultUri string = keyVault.properties.vaultUri
+output keyVaultName string = keyVaultName
 output dceEndpointId string = dataCollectionEndpoint.id
 output dceSyslogId string = syslogCollectionRule.id
-output dceStixId string = stixCollectionRule.id
