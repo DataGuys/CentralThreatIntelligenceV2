@@ -571,6 +571,13 @@ echo -e "${GREEN}✅ STIX DCR deployed successfully${NC}"
 # Step 6: Deploy Logic Apps
 echo -e "\n${BLUE}Step 6: Deploying Logic App connectors...${NC}"
 
+# Ensure we have the workspace ID
+WORKSPACE_ID=$(echo "$CORE_DEPLOY" | jq -r '.workspaceId.value')
+if [[ -z "$WORKSPACE_ID" ]]; then
+    echo -e "${RED}❌ Failed to retrieve workspace ID from deployment${NC}"
+    exit 1
+fi
+
 # Create user-assigned managed identity for logic apps
 echo -e "${YELLOW}Creating user-assigned managed identity for logic apps...${NC}"
 IDENTITY_NAME="CTI-ManagedIdentity"
@@ -609,56 +616,8 @@ az role assignment create \
     --scope "$(az keyvault show --name $KEYVAULT_NAME --query id -o tsv)" \
     --output none
 
-# Download required logic app templates
-echo -e "${YELLOW}Downloading Logic App templates...${NC}"
-mkdir -p "${TEMP_DIR}/logic-apps"
-for template in taxii-connector defender-connector mdti-connector entra-connector exo-connector copilot-connector housekeeping threatfeed-sync deployment; do
-    curl -sL "${RAW_BASE}/logic-apps/${template}.bicep" -o "${TEMP_DIR}/logic-apps/${template}.bicep"
-done
-
-# Create required API connections
-echo -e "${YELLOW}Creating required API connections...${NC}"
-# Log Analytics Data Collector connection
-LOGANALYTICS_CONNECTION_NAME="CTI-LogAnalytics-Connection"
-LOGANALYTICS_CONNECTION_ID=$(az resource show \
-  --resource-group "$RG_NAME" \
-  --name $LOGANALYTICS_CONNECTION_NAME \
-  --resource-type "Microsoft.Web/connections" \
-  --query id -o tsv 2>/dev/null || \
-  az resource create \
-    --resource-group "$RG_NAME" \
-    --resource-type "Microsoft.Web/connections" \
-    --name $LOGANALYTICS_CONNECTION_NAME \
-    --properties "{\"api\":{\"id\":\"$(az account show --query id -o tsv)/providers/Microsoft.Web/locations/${LOCATION}/managedApis/azureloganalyticsdatacollector\"},\"displayName\":\"${LOGANALYTICS_CONNECTION_NAME}\",\"parameterValues\":{\"workspaceId\":\"${WORKSPACE_ID}\"}}" \
-    --query id -o tsv)
-
-# Azure Monitor Logs connection
-MONITORLOGS_CONNECTION_NAME="CTI-MonitorLogs-Connection"
-MONITORLOGS_CONNECTION_ID=$(az resource show \
-  --resource-group "$RG_NAME" \
-  --name $MONITORLOGS_CONNECTION_NAME \
-  --resource-type "Microsoft.Web/connections" \
-  --query id -o tsv 2>/dev/null || \
-  az resource create \
-    --resource-group "$RG_NAME" \
-    --resource-type "Microsoft.Web/connections" \
-    --name $MONITORLOGS_CONNECTION_NAME \
-    --properties "{\"api\":{\"id\":\"$(az account show --query id -o tsv)/providers/Microsoft.Web/locations/${LOCATION}/managedApis/azuremonitorlogs\"},\"displayName\":\"${MONITORLOGS_CONNECTION_NAME}\"}" \
-    --query id -o tsv)
-
-# Microsoft Graph connection (for Entra ID and Exchange connectors)
-GRAPH_CONNECTION_NAME="CTI-Graph-Connection"
-GRAPH_CONNECTION_ID=$(az resource show \
-  --resource-group "$RG_NAME" \
-  --name $GRAPH_CONNECTION_NAME \
-  --resource-type "Microsoft.Web/connections" \
-  --query id -o tsv 2>/dev/null || \
-  az resource create \
-    --resource-group "$RG_NAME" \
-    --resource-type "Microsoft.Web/connections" \
-    --name $GRAPH_CONNECTION_NAME \
-    --properties "{\"api\":{\"id\":\"$(az account show --query id -o tsv)/providers/Microsoft.Web/locations/${LOCATION}/managedApis/microsoftgraph\"},\"displayName\":\"${GRAPH_CONNECTION_NAME}\"}" \
-    --query id -o tsv)
+# Create JSON tags object properly
+TAGS_JSON=$(jq -n --arg env "$ENVIRONMENT" '{"project":"CentralThreatIntelligence","environment":$env}')
 
 # Deploy logic apps using deployment.bicep
 echo -e "${YELLOW}Deploying logic apps using Bicep templates...${NC}"
@@ -683,14 +642,5 @@ LOGIC_APPS_DEPLOY=$(az deployment group create \
     enableSecurityCopilot=true \
     dceNameForCopilot="${PREFIX}-dce-copilot-${ENVIRONMENT}" \
     diagnosticSettingsRetentionDays=30 \
-    tags="{'project':'CentralThreatIntelligence','environment':'$ENVIRONMENT'}" \
+    tags="$TAGS_JSON" \
     --query "properties.outputs" -o json)
-
-# Get the deployed logic app names
-if [ $? -eq 0 ] && [ -n "$LOGIC_APPS_DEPLOY" ]; then
-    LOGIC_APP_NAMES=$(echo $LOGIC_APPS_DEPLOY | jq -r '.logicAppNames.value')
-    echo -e "${GREEN}✅ Logic Apps successfully deployed:${NC}"
-    echo $LOGIC_APP_NAMES | jq '.'
-else
-    echo -e "${RED}❌ Failed to deploy Logic Apps${NC}"
-fi
