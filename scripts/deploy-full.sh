@@ -570,20 +570,127 @@ echo -e "${GREEN}✅ STIX DCR deployed successfully${NC}"
 
 # Step 6: Deploy Logic Apps
 echo -e "\n${BLUE}Step 6: Deploying Logic App connectors...${NC}"
-echo -e "${YELLOW}Skipping Logic Apps deployment for now - will be implemented in a future update${NC}"
 
-echo -e "\n${GREEN}===========================================================${NC}"
-echo -e "${GREEN}    Central Threat Intelligence V2 - Deployment Complete${NC}"
-echo -e "${GREEN}===========================================================${NC}"
-echo -e "\n${BLUE}Next Steps:${NC}"
-echo -e "1. Grant admin consent for API permissions in Azure Portal:"
-echo -e "   - Navigate to: Microsoft Entra ID > App registrations"
-echo -e "   - Select your app: CTI-Solution"
-echo -e "   - Go to 'API permissions'"
-echo -e "   - Click 'Grant admin consent for <your-tenant>'"
-echo -e "\n2. Access your deployment resources:"
-echo -e "   - Resource Group: ${RG_NAME}"
-echo -e "   - Log Analytics Workspace: ${WORKSPACE_NAME}"
-echo -e "   - Key Vault: ${KEYVAULT_NAME}"
-echo -e "\n3. Review the custom tables in your workspace (${TABLE_PLAN} tier)"
-echo -e "\nStore your app credentials securely. They have been saved to: ${TEMP_DIR}/cti-app-credentials.env"
+# Create user-assigned managed identity for logic apps
+echo -e "${YELLOW}Creating user-assigned managed identity for logic apps...${NC}"
+IDENTITY_NAME="CTI-ManagedIdentity"
+IDENTITY_ID=$(az identity show \
+  --name $IDENTITY_NAME \
+  --resource-group "$RG_NAME" \
+  --query id -o tsv 2>/dev/null || \
+  az identity create \
+    --name $IDENTITY_NAME \
+    --resource-group "$RG_NAME" \
+    --location "$LOCATION" \
+    --tags "project=CentralThreatIntelligence" "environment=$ENVIRONMENT" \
+    --query id -o tsv)
+
+# Get the managed identity's principal ID
+IDENTITY_PRINCIPAL_ID=$(az identity show \
+  --name $IDENTITY_NAME \
+  --resource-group "$RG_NAME" \
+  --query principalId -o tsv)
+
+# Store app registration client secret in Key Vault
+echo -e "${YELLOW}Storing app registration client secret in Key Vault...${NC}"
+CLIENT_SECRET_NAME="CTI-APP-SECRET"
+az keyvault secret set \
+    --vault-name "$KEYVAULT_NAME" \
+    --name "$CLIENT_SECRET_NAME" \
+    --value "$CLIENT_SECRET" \
+    --output none
+
+# Grant the managed identity access to the Key Vault to read secrets
+echo -e "${YELLOW}Granting managed identity access to Key Vault...${NC}"
+az role assignment create \
+    --assignee-object-id "$IDENTITY_PRINCIPAL_ID" \
+    --assignee-principal-type ServicePrincipal \
+    --role "Key Vault Secrets User" \
+    --scope "$(az keyvault show --name $KEYVAULT_NAME --query id -o tsv)" \
+    --output none
+
+# Download required logic app templates
+echo -e "${YELLOW}Downloading Logic App templates...${NC}"
+mkdir -p "${TEMP_DIR}/logic-apps"
+for template in taxii-connector defender-connector mdti-connector entra-connector exo-connector copilot-connector housekeeping threatfeed-sync deployment; do
+    curl -sL "${RAW_BASE}/logic-apps/${template}.bicep" -o "${TEMP_DIR}/logic-apps/${template}.bicep"
+done
+
+# Create required API connections
+echo -e "${YELLOW}Creating required API connections...${NC}"
+# Log Analytics Data Collector connection
+LOGANALYTICS_CONNECTION_NAME="CTI-LogAnalytics-Connection"
+LOGANALYTICS_CONNECTION_ID=$(az resource show \
+  --resource-group "$RG_NAME" \
+  --name $LOGANALYTICS_CONNECTION_NAME \
+  --resource-type "Microsoft.Web/connections" \
+  --query id -o tsv 2>/dev/null || \
+  az resource create \
+    --resource-group "$RG_NAME" \
+    --resource-type "Microsoft.Web/connections" \
+    --name $LOGANALYTICS_CONNECTION_NAME \
+    --properties "{\"api\":{\"id\":\"$(az account show --query id -o tsv)/providers/Microsoft.Web/locations/${LOCATION}/managedApis/azureloganalyticsdatacollector\"},\"displayName\":\"${LOGANALYTICS_CONNECTION_NAME}\",\"parameterValues\":{\"workspaceId\":\"${WORKSPACE_ID}\"}}" \
+    --query id -o tsv)
+
+# Azure Monitor Logs connection
+MONITORLOGS_CONNECTION_NAME="CTI-MonitorLogs-Connection"
+MONITORLOGS_CONNECTION_ID=$(az resource show \
+  --resource-group "$RG_NAME" \
+  --name $MONITORLOGS_CONNECTION_NAME \
+  --resource-type "Microsoft.Web/connections" \
+  --query id -o tsv 2>/dev/null || \
+  az resource create \
+    --resource-group "$RG_NAME" \
+    --resource-type "Microsoft.Web/connections" \
+    --name $MONITORLOGS_CONNECTION_NAME \
+    --properties "{\"api\":{\"id\":\"$(az account show --query id -o tsv)/providers/Microsoft.Web/locations/${LOCATION}/managedApis/azuremonitorlogs\"},\"displayName\":\"${MONITORLOGS_CONNECTION_NAME}\"}" \
+    --query id -o tsv)
+
+# Microsoft Graph connection (for Entra ID and Exchange connectors)
+GRAPH_CONNECTION_NAME="CTI-Graph-Connection"
+GRAPH_CONNECTION_ID=$(az resource show \
+  --resource-group "$RG_NAME" \
+  --name $GRAPH_CONNECTION_NAME \
+  --resource-type "Microsoft.Web/connections" \
+  --query id -o tsv 2>/dev/null || \
+  az resource create \
+    --resource-group "$RG_NAME" \
+    --resource-type "Microsoft.Web/connections" \
+    --name $GRAPH_CONNECTION_NAME \
+    --properties "{\"api\":{\"id\":\"$(az account show --query id -o tsv)/providers/Microsoft.Web/locations/${LOCATION}/managedApis/microsoftgraph\"},\"displayName\":\"${GRAPH_CONNECTION_NAME}\"}" \
+    --query id -o tsv)
+
+# Deploy logic apps using deployment.bicep
+echo -e "${YELLOW}Deploying logic apps using Bicep templates...${NC}"
+LOGIC_APPS_DEPLOY=$(az deployment group create \
+  --resource-group "$RG_NAME" \
+  --name "${DEPLOY_NAME}-logic-apps" \
+  --template-file "${TEMP_DIR}/logic-apps/deployment.bicep" \
+  --parameters \
+    location="$LOCATION" \
+    managedIdentityId="$IDENTITY_ID" \
+    logAnalyticsConnectionId="$LOGANALYTICS_CONNECTION_ID" \
+    logAnalyticsQueryConnectionId="$MONITORLOGS_CONNECTION_ID" \
+    microsoftGraphConnectionId="$GRAPH_CONNECTION_ID" \
+    ctiWorkspaceName="$WORKSPACE_NAME" \
+    ctiWorkspaceId="$WORKSPACE_ID" \
+    keyVaultName="$KEYVAULT_NAME" \
+    clientSecretName="$CLIENT_SECRET_NAME" \
+    appClientId="$CLIENT_ID" \
+    tenantId="$TENANT_ID" \
+    securityApiBaseUrl="https://api.securitycenter.microsoft.com" \
+    enableMDTI=true \
+    enableSecurityCopilot=true \
+    dceNameForCopilot="${PREFIX}-dce-copilot-${ENVIRONMENT}" \
+    diagnosticSettingsRetentionDays=30 \
+    tags="{'project':'CentralThreatIntelligence','environment':'$ENVIRONMENT'}" \
+    --query "properties.outputs" -o json)
+
+# Get the deployed logic app names
+if [ $? -eq 0 ] && [ -n "$LOGIC_APPS_DEPLOY" ]; then
+    LOGIC_APP_NAMES=$(echo $LOGIC_APPS_DEPLOY | jq -r '.logicAppNames.value')
+    echo -e "${GREEN}✅ Logic Apps successfully deployed:${NC}"
+    echo $LOGIC_APP_NAMES | jq '.'
+else
+    echo -e "${RED}❌ Failed to deploy Logic Apps${NC}"
+fi
