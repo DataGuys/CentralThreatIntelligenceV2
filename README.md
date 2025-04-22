@@ -7,7 +7,7 @@ A minimal, cost‑efficient Microsoft Sentinel landing zone that provides:
 * **Azure Key Vault** for secret storage (RBAC‑enabled)
 * **Data Collection Rules** for Syslog and STIX ingestion
 * **Logic Apps** for integration with Microsoft security products
-* **App Registration for Entra ID with all the correct permissions to use with Playbooks / Logic apps for inoculation automations.
+* **App Registration** for Entra ID with all the correct permissions to use with Playbooks / Logic apps for inoculation automations.
 
 ## Quick Start Deployment
 
